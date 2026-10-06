@@ -1,0 +1,668 @@
+<title>CEO Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column of sections. Month bar, then the money (CAC / payback), then the funnel rates, then a daily chart, then the entry forms and the log. */
+:root {
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --fg: #141821;
+  --muted: #5b6475;
+  --line: #e0e4eb;
+  --accent: #2a49d1;
+  --accent-soft: #e6ebff;
+  --good: #17804f;
+  --good-soft: #e2f4ea;
+  --warn: #9a6a0b;
+  --warn-soft: #fbf0d9;
+  --bad: #b8392a;
+  --bad-soft: #fbe5e1;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --font-display: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1117; --surface: #161a22; --fg: #e7eaf0; --muted: #98a1b2; --line: #282d38;
+    --accent: #8098ff; --accent-soft: #1d2440;
+    --good: #4cc68a; --good-soft: #13281e; --warn: #e0b04f; --warn-soft: #2a2312; --bad: #f07a6a; --bad-soft: #2d1714;
+    --series-1: #3987e5; --series-2: #d95926;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1117; --surface: #161a22; --fg: #e7eaf0; --muted: #98a1b2; --line: #282d38;
+  --accent: #8098ff; --accent-soft: #1d2440;
+  --good: #4cc68a; --good-soft: #13281e; --warn: #e0b04f; --warn-soft: #2a2312; --bad: #f07a6a; --bad-soft: #2d1714;
+  --series-1: #3987e5; --series-2: #d95926;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 56px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 1.05rem; font-weight: 700; }
+.label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
+.section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+
+/* Header */
+header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+header p { margin: 4px 0 0; color: var(--muted); }
+.month-nav { display: flex; align-items: center; gap: 6px; }
+.month-nav .current { min-width: 9.5em; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1rem; }
+
+/* Controls */
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 12px; font-weight: 600; }
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+button.primary:hover { filter: brightness(1.08); }
+button.ghost { background: transparent; border-color: transparent; color: var(--muted); padding: 4px 8px; }
+button.ghost:hover { color: var(--fg); border-color: var(--line); }
+button.danger { color: var(--bad); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input[type="number"], input[type="date"], input[type="month"] { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field label { font-size: 0.78rem; font-weight: 600; color: var(--muted); }
+
+/* KPI band */
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.kpi { background: var(--surface); padding: 16px 18px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.kpi .value { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-size: 1.7rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; overflow-wrap: anywhere; }
+.kpi .sub { font-size: 0.8rem; color: var(--muted); }
+.kpi.lead { background: var(--accent-soft); }
+.formula { font-family: var(--font-data); font-size: 0.72rem; color: var(--muted); }
+
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; width: fit-content; }
+.chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.chip.good { color: var(--good); background: var(--good-soft); }
+.chip.warn { color: var(--warn); background: var(--warn-soft); }
+.chip.bad { color: var(--bad); background: var(--bad-soft); }
+.chip.none { color: var(--muted); background: var(--bg); }
+
+/* Funnel */
+.funnel { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.rate { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 6px; min-width: 0; }
+.rate .value { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-size: 1.5rem; font-weight: 600; }
+.rate .path { font-size: 0.78rem; color: var(--muted); }
+.rate .meter { height: 4px; border-radius: 2px; background: var(--line); position: relative; overflow: hidden; }
+.rate .meter span { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 2px; }
+.rate .target { font-size: 0.72rem; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.counts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.count { display: grid; gap: 2px; padding: 8px 0; border-top: 2px solid var(--line); }
+.count .n { font-family: var(--font-data); font-size: 1.15rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Chart */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; min-width: 0; }
+.legend { display: flex; gap: 14px; font-size: 0.8rem; color: var(--muted); flex-wrap: wrap; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.chart-box { position: relative; overflow-x: auto; }
+.chart-box svg { display: block; width: 100%; min-width: 560px; height: 220px; }
+.chart-box svg text { fill: var(--muted); font-family: var(--font-data); font-size: 10px; }
+.tooltip { position: absolute; pointer-events: none; background: var(--fg); color: var(--bg); padding: 8px 10px; border-radius: 8px; font-size: 0.78rem; line-height: 1.45; white-space: nowrap; transform: translate(-50%, -100%); }
+.tooltip .num { font-weight: 600; }
+
+/* Forms */
+.forms { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.grid-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.form-foot { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+.status { font-size: 0.8rem; color: var(--muted); }
+.status.err { color: var(--bad); }
+.stack { display: grid; gap: 16px; }
+details summary { cursor: pointer; font-weight: 700; font-family: var(--font-display); }
+details[open] summary { margin-bottom: 12px; }
+
+/* Table */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 980px; font-size: 0.82rem; }
+th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; background: var(--bg); position: sticky; top: 0; }
+th.grp { border-left: 1px solid var(--line); }
+td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+td.grp { border-left: 1px solid var(--line); }
+tbody tr:hover { background: var(--bg); }
+tfoot td { font-weight: 600; background: var(--bg); border-bottom: 0; }
+.tag { font-family: var(--font-body); font-size: 0.66rem; font-weight: 700; color: var(--warn); background: var(--warn-soft); border-radius: 4px; padding: 1px 5px; margin-left: 6px; }
+
+.empty { border: 1px dashed var(--line); border-radius: var(--radius); padding: 28px 20px; text-align: center; display: grid; gap: 10px; justify-items: center; background: var(--surface); }
+.empty p { margin: 0; max-width: 52ch; color: var(--muted); }
+.banner { padding: 10px 14px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); font-size: 0.82rem; font-weight: 600; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+
+@media (max-width: 900px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .funnel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .forms { grid-template-columns: 1fr; }
+  .counts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .kpis, .funnel { grid-template-columns: 1fr; }
+  .grid-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="label">Sales &amp; acquisition</div>
+      <h1>CEO Dashboard</h1>
+      <p id="storage-note">Enter each day's numbers below. Every rate, CAC and payback figure updates on its own.</p>
+    </div>
+    <div class="month-nav">
+      <button type="button" class="ghost" id="prev-month" aria-label="Previous month">&#8592;</button>
+      <div class="current" id="month-label">—</div>
+      <button type="button" class="ghost" id="next-month" aria-label="Next month">&#8594;</button>
+    </div>
+  </header>
+
+  <div class="banner" id="example-banner" hidden>
+    <span>This month includes example rows, marked “example”. They are not your figures.</span>
+    <button type="button" id="clear-examples">Remove example rows</button>
+  </div>
+
+  <!-- Money -->
+  <section aria-labelledby="money-h">
+    <div class="section-head">
+      <h2 id="money-h">Acquisition cost &amp; payback</h2>
+      <span class="muted" id="cac-state" style="font-size:0.8rem"></span>
+    </div>
+    <div class="kpis">
+      <div class="kpi lead">
+        <div class="label">CAC</div>
+        <div class="value" id="k-cac">—</div>
+        <div class="formula">(ad spend + software) ÷ closed deals</div>
+        <div class="sub" id="k-cac-sub"></div>
+      </div>
+      <div class="kpi">
+        <div class="label">30-day gross profit / customer</div>
+        <div class="value" id="k-gp">—</div>
+        <div class="formula">(cash collected − COGS) ÷ closed deals</div>
+        <div class="sub" id="k-gp-sub"></div>
+      </div>
+      <div class="kpi">
+        <div class="label">Payback (30-day GP ÷ CAC)</div>
+        <div class="value" id="k-pbp">—</div>
+        <div id="k-pbp-chip"></div>
+        <div class="sub" id="k-pbp-sub"></div>
+      </div>
+      <div class="kpi">
+        <div class="label">Cash collected</div>
+        <div class="value" id="k-cash">—</div>
+        <div class="sub" id="k-cash-sub"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Funnel -->
+  <section aria-labelledby="funnel-h">
+    <div class="section-head">
+      <h2 id="funnel-h">Funnel rates</h2>
+      <span class="muted" style="font-size:0.8rem">Month to date · colored against your targets</span>
+    </div>
+    <div class="counts" id="counts"></div>
+    <div class="funnel" id="funnel"></div>
+  </section>
+
+  <!-- Chart -->
+  <section aria-labelledby="chart-h">
+    <div class="panel">
+      <div class="section-head" style="margin-bottom:10px">
+        <h2 id="chart-h">Cash collected vs. ad spend, by day</h2>
+        <div class="legend">
+          <span><i style="background:var(--series-1)"></i>Cash collected</span>
+          <span><i style="background:var(--series-2)"></i>Ad spend</span>
+        </div>
+      </div>
+      <div class="chart-box" id="chart-box">
+        <svg id="chart" viewBox="0 0 900 220" preserveAspectRatio="none" role="img" aria-label="Daily cash collected and ad spend"></svg>
+        <div class="tooltip" id="tooltip" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Entry -->
+  <section aria-labelledby="entry-h">
+    <div class="forms">
+      <form class="panel" id="day-form" autocomplete="off">
+        <div class="section-head" style="margin-bottom:12px">
+          <h2 id="entry-h">Daily numbers</h2>
+          <span class="muted" style="font-size:0.8rem">Saving a date that already exists replaces it</span>
+        </div>
+        <div class="grid-fields">
+          <div class="field"><label for="f-date">Date</label><input type="date" id="f-date" required></div>
+          <div class="field"><label for="f-leads"># of leads</label><input type="number" id="f-leads" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+          <div class="field"><label for="f-calls"># of outbound calls</label><input type="number" id="f-calls" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+          <div class="field"><label for="f-pickups"># of pickups</label><input type="number" id="f-pickups" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+          <div class="field"><label for="f-booked"># booked appointments</label><input type="number" id="f-booked" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+          <div class="field"><label for="f-shown"># shown appointments</label><input type="number" id="f-shown" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+          <div class="field"><label for="f-closed"># closed appointments</label><input type="number" id="f-closed" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+          <div class="field"><label for="f-cash">Cash collected ($)</label><input type="number" id="f-cash" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+          <div class="field"><label for="f-adspend">Ad spend for the day ($)</label><input type="number" id="f-adspend" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+        </div>
+        <div class="form-foot">
+          <button type="submit" class="primary">Save day</button>
+          <button type="button" id="day-clear">Clear form</button>
+          <span class="status" id="day-status" role="status"></span>
+        </div>
+      </form>
+
+      <div class="stack">
+        <form class="panel" id="month-form" autocomplete="off">
+          <h2 style="margin-bottom:4px">Monthly costs</h2>
+          <p class="muted" style="margin:0 0 12px;font-size:0.8rem">For <span id="mf-month">this month</span>. Software feeds CAC; COGS feeds gross profit.</p>
+          <div class="grid-fields" style="grid-template-columns:1fr 1fr">
+            <div class="field"><label for="m-software">Software costs ($)</label><input type="number" id="m-software" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+            <div class="field"><label for="m-cogs">Cost of goods sold ($)</label><input type="number" id="m-cogs" min="0" step="0.01" inputmode="decimal" placeholder="0.00"></div>
+          </div>
+          <div class="field" style="margin-top:12px">
+            <label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="m-closed"> Month is closed — CAC is final</label>
+          </div>
+          <div class="form-foot">
+            <button type="submit" class="primary">Save costs</button>
+            <span class="status" id="month-status" role="status"></span>
+          </div>
+        </form>
+
+        <details class="panel" id="targets-panel">
+          <summary>Targets</summary>
+          <form id="targets-form" autocomplete="off">
+            <div class="grid-fields" style="grid-template-columns:1fr 1fr">
+              <div class="field"><label for="t-qualified">Qualified lead rate %</label><input type="number" id="t-qualified" min="0" step="1"></div>
+              <div class="field"><label for="t-pickup">Pickup rate %</label><input type="number" id="t-pickup" min="0" max="100" step="1"></div>
+              <div class="field"><label for="t-booking">Booking rate %</label><input type="number" id="t-booking" min="0" max="100" step="1"></div>
+              <div class="field"><label for="t-show">Show rate %</label><input type="number" id="t-show" min="0" max="100" step="1"></div>
+              <div class="field"><label for="t-close">Close rate %</label><input type="number" id="t-close" min="0" max="100" step="1"></div>
+              <div class="field"><label for="t-payback">Payback ratio (x)</label><input type="number" id="t-payback" min="0" step="0.1"></div>
+            </div>
+            <div class="form-foot">
+              <button type="submit" class="primary">Save targets</button>
+              <span class="status" id="targets-status" role="status"></span>
+            </div>
+          </form>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- Log -->
+  <section aria-labelledby="log-h">
+    <div class="section-head">
+      <h2 id="log-h">Daily log</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" id="export-csv" hidden>Export CSV</button>
+      </div>
+    </div>
+    <div id="log"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- helpers ----------
+  const $ = (id) => document.getElementById(id);
+  const FIELDS = ["leads", "calls", "pickups", "booked", "shown", "closed", "cash", "adspend"];
+  const DEFAULT_TARGETS = { qualified: 80, pickup: 25, booking: 20, show: 70, close: 25, payback: 1 };
+  const money = (n) => n == null || !isFinite(n) ? "—" : (n < 0 ? "−$" : "$") + Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: Math.abs(n) < 1000 ? 2 : 0, maximumFractionDigits: Math.abs(n) < 1000 ? 2 : 0 });
+  const pct = (n) => n == null || !isFinite(n) ? "—" : (n * 100).toFixed(1) + "%";
+  const int = (n) => (n || 0).toLocaleString();
+  const div = (a, b) => (b > 0 ? a / b : null);
+  const todayISO = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+  const monthKey = (iso) => iso.slice(0, 7);
+  const monthName = (key) => { const [y, m] = key.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" }); };
+  const shiftMonth = (key, by) => { const [y, m] = key.split("-").map(Number); const d = new Date(y, m - 1 + by, 1); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
+  const daysIn = (key) => { const [y, m] = key.split("-").map(Number); return new Date(y, m, 0).getDate(); };
+  const num = (v) => { const n = parseFloat(v); return isFinite(n) && n >= 0 ? n : 0; };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // ---------- state ----------
+  const state = { days: {}, months: {}, targets: { ...DEFAULT_TARGETS }, month: monthKey(todayISO()), ready: false };
+
+  // ---------- storage: shared db when published, browser storage otherwise ----------
+  const LS_KEY = "ceo-dashboard-v1";
+  const local = {
+    load() { try { const raw = localStorage.getItem(LS_KEY); if (raw) { const d = JSON.parse(raw); state.days = d.days || {}; state.months = d.months || {}; state.targets = { ...DEFAULT_TARGETS, ...(d.targets || {}) }; } } catch (e) {} },
+    persist() { try { localStorage.setItem(LS_KEY, JSON.stringify({ days: state.days, months: state.months, targets: state.targets })); } catch (e) {} },
+    async saveDay(row) { state.days[row.date] = row; this.persist(); render(); },
+    async deleteDay(date) { delete state.days[date]; this.persist(); render(); },
+    async saveMonth(key, row) { state.months[key] = row; this.persist(); render(); },
+    async saveTargets(t) { state.targets = t; this.persist(); render(); },
+  };
+
+  let store = local;
+
+  function useDb(db) {
+    store = {
+      async saveDay(row) { await db.collection("days").doc(row.date).set(row); },
+      async deleteDay(date) { await db.collection("days").doc(date).delete(); },
+      async saveMonth(key, row) { await db.collection("months").doc(key).set(row); },
+      async saveTargets(t) { await db.doc("settings/targets").set(t); },
+    };
+    let loaded = 0;
+    const mark = () => { if (++loaded >= 3) { state.ready = true; } render(); };
+    const once = (fn) => { let done = false; return (...a) => { fn(...a); if (!done) { done = true; mark(); } }; };
+    const onErr = (e) => { $("storage-note").textContent = "Couldn't reach saved data (" + (e && e.code || "error") + "). Reload the page to try again."; };
+    db.collection("days").onSnapshot(once((snap) => {
+      const next = {}; snap.docs.forEach((d) => { next[d.id] = d.data(); }); state.days = next;
+    }), onErr);
+    db.collection("months").onSnapshot(once((snap) => {
+      const next = {}; snap.docs.forEach((d) => { next[d.id] = d.data(); }); state.months = next; monthFormKey = null;
+    }), onErr);
+    db.doc("settings/targets").onSnapshot(once((snap) => {
+      state.targets = { ...DEFAULT_TARGETS, ...(snap.exists ? snap.data() : {}) };
+    }), onErr);
+  }
+
+  // ---------- calculations ----------
+  function rowsFor(key) {
+    return Object.values(state.days).filter((r) => r && r.date && monthKey(r.date) === key).sort((a, b) => a.date.localeCompare(b.date));
+  }
+  function totals(rows) {
+    const t = Object.fromEntries(FIELDS.map((f) => [f, 0]));
+    rows.forEach((r) => FIELDS.forEach((f) => { t[f] += num(r[f]); }));
+    return t;
+  }
+  function rates(t) {
+    return {
+      qualified: div(t.calls, t.leads),   // lead -> phone call
+      pickup: div(t.pickups, t.calls),    // outbound call -> pickup
+      booking: div(t.booked, t.leads),    // lead -> booked (ABR)
+      show: div(t.shown, t.booked),       // booked -> shown
+      close: div(t.closed, t.shown),      // shown -> closed
+    };
+  }
+  function economics(t, m) {
+    const software = num(m && m.software), cogs = num(m && m.cogs);
+    const acquisition = t.adspend + software;
+    const cac = div(acquisition, t.closed);
+    const gp = t.cash - cogs;
+    const gpPer = div(gp, t.closed);
+    const ratio = cac && gpPer != null ? gpPer / cac : null;
+    const paybackDays = gpPer > 0 && cac != null ? cac / (gpPer / 30) : null;
+    return { software, cogs, acquisition, cac, gp, gpPer, ratio, paybackDays };
+  }
+  function grade(value, target) {
+    if (value == null || !target) return "none";
+    if (value >= target) return "good";
+    if (value >= target * 0.8) return "warn";
+    return "bad";
+  }
+  const GRADE_TEXT = { good: "On target", warn: "Near target", bad: "Below target", none: "No data" };
+
+  // ---------- render ----------
+  function render() {
+    const key = state.month;
+    const rows = rowsFor(key);
+    const t = totals(rows);
+    const r = rates(t);
+    const m = state.months[key] || {};
+    const e = economics(t, m);
+    const tg = state.targets;
+
+    $("month-label").textContent = monthName(key);
+    $("mf-month").textContent = monthName(key);
+    $("example-banner").hidden = !rows.some((x) => x.example);
+
+    // Money
+    const isClosedMonth = !!m.closed || key < monthKey(todayISO());
+    $("cac-state").textContent = rows.length ? (isClosedMonth ? "Final for " + monthName(key) : "Month to date · final once the month closes") : "";
+    $("k-cac").textContent = money(e.cac);
+    $("k-cac-sub").textContent = rows.length ? money(t.adspend) + " ads + " + money(e.software) + " software ÷ " + int(t.closed) + " closed" : "No days entered yet";
+    $("k-gp").textContent = money(e.gpPer);
+    $("k-gp-sub").textContent = rows.length ? money(t.cash) + " cash − " + money(e.cogs) + " COGS = " + money(e.gp) : "";
+    $("k-pbp").textContent = e.ratio == null ? "—" : e.ratio.toFixed(2) + "x";
+    const pg = grade(e.ratio, tg.payback);
+    $("k-pbp-chip").innerHTML = '<span class="chip ' + pg + '">' + (pg === "none" ? "No data" : e.ratio >= 1 ? "Paid back in 30 days" : "Not paid back in 30 days") + "</span>";
+    $("k-pbp-sub").textContent = e.paybackDays != null ? "≈ " + Math.round(e.paybackDays) + " days to recover CAC" : (e.gpPer != null && e.gpPer <= 0 ? "Gross profit is not positive" : "");
+    $("k-cash").textContent = money(t.cash);
+    $("k-cash-sub").textContent = rows.length ? int(rows.length) + " of " + daysIn(key) + " days logged · " + money(t.adspend) + " ad spend" : "";
+
+    // Counts
+    const countDefs = [["Leads", t.leads], ["Outbound calls", t.calls], ["Pickups", t.pickups], ["Booked", t.booked], ["Shown", t.shown], ["Closed", t.closed]];
+    $("counts").innerHTML = countDefs.map(([l, n]) => '<div class="count"><span class="label">' + l + '</span><span class="n">' + int(n) + "</span></div>").join("");
+
+    // Funnel rates
+    const defs = [
+      ["qualified", "Qualified lead rate", "Leads → phone calls"],
+      ["pickup", "Pickup rate", "Outbound calls → pickups"],
+      ["booking", "Booking rate (ABR)", "Leads → booked appts"],
+      ["show", "Show rate", "Booked → shown appts"],
+      ["close", "Close rate", "Shown → closed appts"],
+    ];
+    $("funnel").innerHTML = defs.map(([k, name, path]) => {
+      const v = r[k], target = tg[k] / 100, g = grade(v, target);
+      const w = v == null ? 0 : Math.min(100, v * 100);
+      return '<div class="rate"><div class="label">' + name + '</div><div class="value">' + pct(v) + '</div>' +
+        '<div class="path">' + path + '</div>' +
+        '<div class="meter" aria-hidden="true"><span style="width:' + w + '%"></span></div>' +
+        '<div class="target"><span class="chip ' + g + '">' + GRADE_TEXT[g] + '</span><span>target ' + tg[k] + "%</span></div></div>";
+    }).join("");
+
+    renderChart(key, rows);
+    renderLog(key, rows, t, r);
+    fillMonthForm(m);
+    fillTargets();
+  }
+
+  function renderChart(key, rows) {
+    const svg = $("chart");
+    const W = 900, H = 220, padL = 52, padR = 8, padT = 10, padB = 24;
+    const n = daysIn(key);
+    const byDay = {}; rows.forEach((r) => { byDay[Number(r.date.slice(8, 10))] = r; });
+    const maxV = Math.max(1, ...rows.map((r) => Math.max(num(r.cash), num(r.adspend))));
+    const step = niceStep(maxV / 4);
+    const top = Math.ceil(maxV / step) * step;
+    const y = (v) => padT + (H - padT - padB) * (1 - v / top);
+    const slot = (W - padL - padR) / n;
+    const bw = Math.max(2, Math.min(12, slot / 2 - 3));
+    let out = "";
+    for (let v = 0; v <= top + 1e-9; v += step) {
+      out += '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--line)" stroke-width="1"/>';
+      out += '<text x="' + (padL - 6) + '" y="' + (y(v) + 3) + '" text-anchor="end">' + compact(v) + "</text>";
+    }
+    for (let d = 1; d <= n; d++) {
+      const cx = padL + slot * (d - 0.5);
+      if (d === 1 || d % 5 === 0) out += '<text x="' + cx + '" y="' + (H - 8) + '" text-anchor="middle">' + d + "</text>";
+      const r = byDay[d];
+      if (r) {
+        const c = num(r.cash), a = num(r.adspend);
+        out += bar(cx - bw - 1, bw, c, "var(--series-1)") + bar(cx + 1, bw, a, "var(--series-2)");
+      }
+      out += '<rect class="hit" data-day="' + d + '" x="' + (cx - slot / 2) + '" y="' + padT + '" width="' + slot + '" height="' + (H - padT - padB) + '" fill="transparent"/>';
+    }
+    function bar(x, w, v, color) {
+      if (v <= 0) return "";
+      const y0 = y(0), y1 = y(v), h = Math.max(1, y0 - y1), rr = Math.min(4, w / 2, h);
+      return '<path d="M' + x + "," + y0 + "V" + (y1 + rr) + "Q" + x + "," + y1 + " " + (x + rr) + "," + y1 + "H" + (x + w - rr) + "Q" + (x + w) + "," + y1 + " " + (x + w) + "," + (y1 + rr) + "V" + y0 + 'Z" fill="' + color + '"/>';
+    }
+    out += '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y(0) + '" y2="' + y(0) + '" stroke="var(--muted)" stroke-width="1"/>';
+    svg.innerHTML = out;
+
+    const tip = $("tooltip"), box = $("chart-box");
+    svg.querySelectorAll(".hit").forEach((h) => {
+      h.addEventListener("mouseenter", () => {
+        const d = Number(h.dataset.day), r = byDay[d];
+        const date = key + "-" + String(d).padStart(2, "0");
+        tip.innerHTML = "<strong>" + new Date(date + "T12:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }) + "</strong><br>" +
+          (r ? 'Cash <span class="num">' + money(num(r.cash)) + '</span><br>Ad spend <span class="num">' + money(num(r.adspend)) + "</span>" : "No entry");
+        const bb = h.getBoundingClientRect(), pb = box.getBoundingClientRect();
+        tip.style.left = (bb.left - pb.left + box.scrollLeft + bb.width / 2) + "px";
+        tip.style.top = "8px";
+        tip.style.transform = "translate(-50%, 0)";
+        tip.hidden = false;
+      });
+      h.addEventListener("mouseleave", () => { tip.hidden = true; });
+    });
+  }
+  function niceStep(raw) { const p = Math.pow(10, Math.floor(Math.log10(raw || 1))); const f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; }
+  function compact(v) { return v >= 1e6 ? "$" + (v / 1e6).toFixed(v % 1e6 ? 1 : 0) + "M" : v >= 1e3 ? "$" + (v / 1e3).toFixed(v % 1e3 ? 1 : 0) + "k" : "$" + v; }
+
+  function renderLog(key, rows, t, r) {
+    const log = $("log");
+    $("export-csv").hidden = !rows.length || !exporter;
+    if (!rows.length) {
+      log.innerHTML = '<div class="empty"><h3>No days logged for ' + esc(monthName(key)) + '</h3>' +
+        "<p>" + (state.ready || store === local ? "Fill in the Daily numbers form above and press Save day. Each day you save shows up here with its own rates." : "Loading saved days…") + "</p>" +
+        (Object.keys(state.days).length === 0 && (state.ready || store === local) ? '<button type="button" id="load-examples">Try it with example data</button>' : "") + "</div>";
+      const b = $("load-examples"); if (b) b.addEventListener("click", loadExamples);
+      return;
+    }
+    const head = "<thead><tr><th>Date</th><th>Leads</th><th>Calls</th><th>Pickups</th><th>Booked</th><th>Shown</th><th>Closed</th><th>Cash</th><th>Ad spend</th>" +
+      '<th class="grp">Qual.</th><th>Pickup</th><th>Booking</th><th>Show</th><th>Close</th><th></th></tr></thead>';
+    const line = (x) => {
+      const rr = rates(totals([x]));
+      return "<tr><td>" + esc(new Date(x.date + "T12:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })) + (x.example ? '<span class="tag">example</span>' : "") + "</td>" +
+        ["leads", "calls", "pickups", "booked", "shown", "closed"].map((f) => "<td>" + int(num(x[f])) + "</td>").join("") +
+        "<td>" + money(num(x.cash)) + "</td><td>" + money(num(x.adspend)) + "</td>" +
+        '<td class="grp">' + pct(rr.qualified) + "</td><td>" + pct(rr.pickup) + "</td><td>" + pct(rr.booking) + "</td><td>" + pct(rr.show) + "</td><td>" + pct(rr.close) + "</td>" +
+        '<td><button type="button" class="ghost" data-edit="' + esc(x.date) + '">Edit</button><button type="button" class="ghost danger" data-del="' + esc(x.date) + '">Delete</button></td></tr>';
+    };
+    const foot = "<tfoot><tr><td>Month total</td>" + ["leads", "calls", "pickups", "booked", "shown", "closed"].map((f) => "<td>" + int(t[f]) + "</td>").join("") +
+      "<td>" + money(t.cash) + "</td><td>" + money(t.adspend) + "</td>" +
+      '<td class="grp">' + pct(r.qualified) + "</td><td>" + pct(r.pickup) + "</td><td>" + pct(r.booking) + "</td><td>" + pct(r.show) + "</td><td>" + pct(r.close) + "</td><td></td></tr></tfoot>";
+    log.innerHTML = '<div class="table-wrap"><table>' + head + "<tbody>" + rows.slice().reverse().map(line).join("") + "</tbody>" + foot + "</table></div>";
+    log.querySelectorAll("[data-edit]").forEach((b) => b.addEventListener("click", () => editDay(b.dataset.edit)));
+    log.querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () => confirmDelete(b)));
+  }
+
+  function confirmDelete(btn) {
+    if (btn.dataset.armed) {
+      store.deleteDay(btn.dataset.del).catch(showErr("day-status"));
+      return;
+    }
+    btn.dataset.armed = "1";
+    btn.textContent = "Confirm delete";
+    setTimeout(() => { if (btn.isConnected) { delete btn.dataset.armed; btn.textContent = "Delete"; } }, 4000);
+  }
+
+  // ---------- forms ----------
+  let monthFormKey = null, targetsFilled = false;
+  function fillMonthForm(m) {
+    if (monthFormKey === state.month) return;
+    monthFormKey = state.month;
+    $("m-software").value = m.software != null ? m.software : "";
+    $("m-cogs").value = m.cogs != null ? m.cogs : "";
+    $("m-closed").checked = !!m.closed;
+  }
+  function fillTargets() {
+    if (targetsFilled && state.ready) return;
+    targetsFilled = true;
+    Object.keys(DEFAULT_TARGETS).forEach((k) => { $("t-" + k).value = state.targets[k]; });
+  }
+  function editDay(date) {
+    const r = state.days[date]; if (!r) return;
+    $("f-date").value = date;
+    FIELDS.forEach((f) => { $("f-" + f).value = r[f] != null ? r[f] : ""; });
+    $("day-form").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("f-leads").focus({ preventScroll: true });
+  }
+  function showErr(id) {
+    return (e) => { const s = $(id); s.className = "status err"; s.textContent = "Not saved: " + (e && e.code === "invalid_argument" ? "you don't have permission to change this dashboard." : "the connection failed. Try again in a moment."); };
+  }
+  function ok(id, msg) { const s = $(id); s.className = "status"; s.textContent = msg; setTimeout(() => { if (s.textContent === msg) s.textContent = ""; }, 3000); }
+
+  $("day-form").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const date = $("f-date").value;
+    if (!date) { const s = $("day-status"); s.className = "status err"; s.textContent = "Pick a date first."; return; }
+    const row = { date };
+    FIELDS.forEach((f) => { row[f] = num($("f-" + f).value); });
+    const existed = !!state.days[date];
+    store.saveDay(row).then(() => {
+      ok("day-status", (existed ? "Updated " : "Saved ") + new Date(date + "T12:00").toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+      if (monthKey(date) !== state.month) { state.month = monthKey(date); monthFormKey = null; render(); }
+      FIELDS.forEach((f) => { $("f-" + f).value = ""; });
+      const next = new Date(date + "T12:00"); next.setDate(next.getDate() + 1);
+      const nextIso = next.getFullYear() + "-" + String(next.getMonth() + 1).padStart(2, "0") + "-" + String(next.getDate()).padStart(2, "0");
+      $("f-date").value = nextIso <= todayISO() ? nextIso : date;
+    }).catch(showErr("day-status"));
+  });
+  $("day-clear").addEventListener("click", () => { FIELDS.forEach((f) => { $("f-" + f).value = ""; }); $("f-date").value = todayISO(); $("day-status").textContent = ""; });
+
+  $("month-form").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const row = { software: num($("m-software").value), cogs: num($("m-cogs").value), closed: $("m-closed").checked };
+    store.saveMonth(state.month, row).then(() => ok("month-status", "Saved for " + monthName(state.month))).catch(showErr("month-status"));
+  });
+
+  $("targets-form").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const t = {}; Object.keys(DEFAULT_TARGETS).forEach((k) => { const v = parseFloat($("t-" + k).value); t[k] = isFinite(v) && v >= 0 ? v : DEFAULT_TARGETS[k]; });
+    store.saveTargets(t).then(() => ok("targets-status", "Targets saved")).catch(showErr("targets-status"));
+  });
+
+  $("prev-month").addEventListener("click", () => { state.month = shiftMonth(state.month, -1); render(); });
+  $("next-month").addEventListener("click", () => { state.month = shiftMonth(state.month, 1); render(); });
+
+  // ---------- example data ----------
+  async function loadExamples() {
+    const key = state.month, today = todayISO();
+    const last = monthKey(today) === key ? Number(today.slice(8, 10)) : daysIn(key);
+    let seed = 7;
+    const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    for (let d = 1; d <= Math.min(last, 14); d++) {
+      const leads = 30 + Math.round(rnd() * 25), calls = Math.round(leads * (0.8 + rnd() * 0.25)), pickups = Math.round(calls * (0.22 + rnd() * 0.12));
+      const booked = Math.round(leads * (0.15 + rnd() * 0.1)), shown = Math.round(booked * (0.6 + rnd() * 0.2)), closed = Math.round(shown * (0.2 + rnd() * 0.15));
+      const row = { date: key + "-" + String(d).padStart(2, "0"), leads, calls, pickups, booked, shown, closed, cash: closed * (1500 + Math.round(rnd() * 10) * 100), adspend: 350 + Math.round(rnd() * 250), example: true };
+      await store.saveDay(row);
+    }
+  }
+  $("clear-examples").addEventListener("click", async () => {
+    for (const r of Object.values(state.days)) { if (r.example) await store.deleteDay(r.date); }
+  });
+
+  // ---------- CSV export ----------
+  let exporter = null;
+  function csv() {
+    const rows = rowsFor(state.month);
+    const head = ["date", ...FIELDS, "qualified_rate", "pickup_rate", "booking_rate", "show_rate", "close_rate"];
+    const lines = rows.map((x) => { const rr = rates(totals([x])); return [x.date, ...FIELDS.map((f) => num(x[f])), rr.qualified, rr.pickup, rr.booking, rr.show, rr.close].map((v) => v == null ? "" : typeof v === "number" && v < 1 && v > 0 ? v.toFixed(4) : v).join(","); });
+    return head.join(",") + "\n" + lines.join("\n") + "\n";
+  }
+  $("export-csv").addEventListener("click", () => {
+    if (exporter) exporter(state.month + "-ceo-dashboard.csv", csv()).catch(() => {});
+  });
+
+  // ---------- boot ----------
+  $("f-date").value = todayISO();
+  local.load();
+  state.ready = true;
+  render();
+
+  if (window.claude && typeof window.claude.use === "function") {
+    $("storage-note").textContent = "Loading saved data…";
+    window.claude.use("db").then((db) => {
+      if (db) {
+        state.days = {}; state.months = {}; state.targets = { ...DEFAULT_TARGETS }; state.ready = false; targetsFilled = false; monthFormKey = null;
+        useDb(db);
+        $("storage-note").textContent = "Enter each day's numbers below. Every rate, CAC and payback figure updates on its own and is saved for everyone with access.";
+      } else {
+        $("storage-note").textContent = "Saved in this browser only. Enter each day's numbers below; every rate, CAC and payback figure updates on its own.";
+      }
+      render();
+    });
+    window.claude.use("downloads").then((dl) => {
+      if (dl) { exporter = (filename, text) => dl.save({ filename, data: text }); render(); }
+    });
+  } else {
+    $("storage-note").textContent = "Saved in this browser only. Enter each day's numbers below; every rate, CAC and payback figure updates on its own.";
+    exporter = (filename, text) => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
+      a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      return Promise.resolve();
+    };
+    render();
+  }
+})();
+</script>

@@ -41,6 +41,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.5; }
 .wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 56px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
 h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
@@ -122,9 +123,9 @@ details[open] summary { margin-bottom: 12px; }
 
 /* Table */
 .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
-table { border-collapse: collapse; width: 100%; min-width: 980px; font-size: 0.82rem; }
+table { border-collapse: collapse; width: 100%; min-width: 1120px; font-size: 0.82rem; }
 th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
-th:first-child, td:first-child { text-align: left; }
+th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
 th { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; background: var(--bg); position: sticky; top: 0; }
 th.grp { border-left: 1px solid var(--line); }
 td { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
@@ -133,6 +134,21 @@ tbody tr:hover { background: var(--bg); }
 tfoot td { font-weight: 600; background: var(--bg); border-bottom: 0; }
 .tag { font-family: var(--font-body); font-size: 0.66rem; font-weight: 700; color: var(--warn); background: var(--warn-soft); border-radius: 4px; padding: 1px 5px; margin-left: 6px; }
 
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; border-radius: 0; padding: 6px 12px; background: transparent; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.toolbar { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.toolbar .left, .toolbar .right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.confirm-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; border-radius: 8px; background: var(--bad-soft); color: var(--bad); font-weight: 600; font-size: 0.85rem; }
+button.solid-danger { background: var(--bad); border-color: var(--bad); color: var(--surface); }
+td.sel, th.sel { width: 34px; text-align: center; padding-right: 0; }
+input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+tr.month-row td { background: var(--bg); font-weight: 700; border-top: 1px solid var(--line); }
+tr.month-row td:nth-child(2) { font-family: var(--font-display); }
+tr.selected td { background: var(--accent-soft); }
+tr.pending td { background: var(--bad-soft); }
+.row-confirm { display: inline-flex; gap: 6px; align-items: center; font-family: var(--font-body); font-size: 0.78rem; color: var(--bad); font-weight: 700; }
+.row-confirm button { padding: 3px 8px; font-size: 0.78rem; }
 .empty { border: 1px dashed var(--line); border-radius: var(--radius); padding: 28px 20px; text-align: center; display: grid; gap: 10px; justify-items: center; background: var(--surface); }
 .empty p { margin: 0; max-width: 52ch; color: var(--muted); }
 .banner { padding: 10px 14px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); font-size: 0.82rem; font-weight: 600; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
@@ -165,7 +181,7 @@ tfoot td { font-weight: 600; background: var(--bg); border-bottom: 0; }
   </header>
 
   <div class="banner" id="example-banner" hidden>
-    <span>This month includes example rows, marked “example”. They are not your figures.</span>
+    <span id="example-text">Example rows are loaded, marked “example”. They are not your figures.</span>
     <button type="button" id="clear-examples">Remove example rows</button>
   </div>
 
@@ -296,10 +312,29 @@ tfoot td { font-weight: 600; background: var(--bg); border-bottom: 0; }
   <!-- Log -->
   <section aria-labelledby="log-h">
     <div class="section-head">
-      <h2 id="log-h">Daily log</h2>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div>
+        <h2 id="log-h">Day-by-day history</h2>
+        <span class="muted" id="log-sub" style="font-size:0.8rem"></span>
+      </div>
+      <div class="seg" role="group" aria-label="Which days to show">
+        <button type="button" id="scope-month" aria-pressed="true">This month</button>
+        <button type="button" id="scope-all" aria-pressed="false">All days</button>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="left">
+        <span class="muted" id="sel-count" style="font-size:0.82rem">Tick days to select them</span>
+        <button type="button" id="delete-selected" class="danger" hidden>Delete selected</button>
+        <button type="button" id="clear-selection" class="ghost" hidden>Clear selection</button>
+      </div>
+      <div class="right">
         <button type="button" id="export-csv" hidden>Export CSV</button>
       </div>
+    </div>
+    <div class="confirm-bar" id="bulk-confirm" hidden>
+      <span id="bulk-confirm-text"></span>
+      <button type="button" class="solid-danger" id="bulk-yes">Yes, delete</button>
+      <button type="button" id="bulk-no">Cancel</button>
     </div>
     <div id="log"></div>
   </section>
@@ -326,7 +361,8 @@ tfoot td { font-weight: 600; background: var(--bg); border-bottom: 0; }
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
   // ---------- state ----------
-  const state = { days: {}, months: {}, targets: { ...DEFAULT_TARGETS }, month: monthKey(todayISO()), ready: false };
+  const state = { days: {}, months: {}, targets: { ...DEFAULT_TARGETS }, month: monthKey(todayISO()), ready: false,
+    scope: "month", selected: new Set(), pendingDelete: null, busy: false };
 
   // ---------- storage: shared db when published, browser storage otherwise ----------
   const LS_KEY = "ceo-dashboard-v1";
@@ -342,15 +378,21 @@ tfoot td { font-weight: 600; background: var(--bg); border-bottom: 0; }
   let store = local;
 
   function useDb(db) {
+    // Update the screen right away, then write; the live snapshot confirms or corrects it.
+    const retry = (fn) => fn().catch((e) => {
+      if (e && e.code === "unavailable") return new Promise((r) => setTimeout(r, 400 + Math.random() * 600)).then(fn);
+      throw e;
+    });
     store = {
-      async saveDay(row) { await db.collection("days").doc(row.date).set(row); },
-      async deleteDay(date) { await db.collection("days").doc(date).delete(); },
-      async saveMonth(key, row) { await db.collection("months").doc(key).set(row); },
-      async saveTargets(t) { await db.doc("settings/targets").set(t); },
+      async saveDay(row) { state.days = { ...state.days, [row.date]: row }; render(); await retry(() => db.collection("days").doc(row.date).set(row)); },
+      async deleteDay(date) { const next = { ...state.days }; delete next[date]; state.days = next; render(); await retry(() => db.collection("days").doc(date).delete()); },
+      async saveMonth(key, row) { state.months = { ...state.months, [key]: row }; render(); await retry(() => db.collection("months").doc(key).set(row)); },
+      async saveTargets(t) { state.targets = t; render(); await retry(() => db.doc("settings/targets").set(t)); },
     };
     let loaded = 0;
-    const mark = () => { if (++loaded >= 3) { state.ready = true; } render(); };
-    const once = (fn) => { let done = false; return (...a) => { fn(...a); if (!done) { done = true; mark(); } }; };
+    const mark = () => { if (++loaded >= 3) { state.ready = true; } };
+    // Re-render on EVERY snapshot so saves and deletes show up immediately.
+    const once = (fn) => { let done = false; return (...a) => { fn(...a); if (!done) { done = true; mark(); } render(); }; };
     const onErr = (e) => { $("storage-note").textContent = "Couldn't reach saved data (" + (e && e.code || "error") + "). Reload the page to try again."; };
     db.collection("days").onSnapshot(once((snap) => {
       const next = {}; snap.docs.forEach((d) => { next[d.id] = d.data(); }); state.days = next;
@@ -411,7 +453,9 @@ tfoot td { font-weight: 600; background: var(--bg); border-bottom: 0; }
 
     $("month-label").textContent = monthName(key);
     $("mf-month").textContent = monthName(key);
-    $("example-banner").hidden = !rows.some((x) => x.example);
+    const exampleCount = Object.values(state.days).filter((x) => x && x.example).length;
+    $("example-banner").hidden = !exampleCount;
+    if (exampleCount && !state.busy) $("example-text").textContent = exampleCount + " example day" + (exampleCount === 1 ? " is" : "s are") + " loaded, marked “example”. They are not your figures.";
 
     // Money
     const isClosedMonth = !!m.closed || key < monthKey(todayISO());
@@ -449,7 +493,7 @@ tfoot td { font-weight: 600; background: var(--bg); border-bottom: 0; }
     }).join("");
 
     renderChart(key, rows);
-    renderLog(key, rows, t, r);
+    renderLog();
     fillMonthForm(m);
     fillTargets();
   }
@@ -507,43 +551,134 @@ tfoot td { font-weight: 600; background: var(--bg); border-bottom: 0; }
   function niceStep(raw) { const p = Math.pow(10, Math.floor(Math.log10(raw || 1))); const f = raw / p; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p; }
   function compact(v) { return v >= 1e6 ? "$" + (v / 1e6).toFixed(v % 1e6 ? 1 : 0) + "M" : v >= 1e3 ? "$" + (v / 1e3).toFixed(v % 1e3 ? 1 : 0) + "k" : "$" + v; }
 
-  function renderLog(key, rows, t, r) {
-    const log = $("log");
-    $("export-csv").hidden = !rows.length || !exporter;
-    if (!rows.length) {
-      log.innerHTML = '<div class="empty"><h3>No days logged for ' + esc(monthName(key)) + '</h3>' +
-        "<p>" + (state.ready || store === local ? "Fill in the Daily numbers form above and press Save day. Each day you save shows up here with its own rates." : "Loading saved days…") + "</p>" +
-        (Object.keys(state.days).length === 0 && (state.ready || store === local) ? '<button type="button" id="load-examples">Try it with example data</button>' : "") + "</div>";
-      const b = $("load-examples"); if (b) b.addEventListener("click", loadExamples);
-      return;
-    }
-    const head = "<thead><tr><th>Date</th><th>Leads</th><th>Calls</th><th>Pickups</th><th>Booked</th><th>Shown</th><th>Closed</th><th>Cash</th><th>Ad spend</th>" +
-      '<th class="grp">Qual.</th><th>Pickup</th><th>Booking</th><th>Show</th><th>Close</th><th></th></tr></thead>';
-    const line = (x) => {
-      const rr = rates(totals([x]));
-      return "<tr><td>" + esc(new Date(x.date + "T12:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })) + (x.example ? '<span class="tag">example</span>' : "") + "</td>" +
-        ["leads", "calls", "pickups", "booked", "shown", "closed"].map((f) => "<td>" + int(num(x[f])) + "</td>").join("") +
-        "<td>" + money(num(x.cash)) + "</td><td>" + money(num(x.adspend)) + "</td>" +
-        '<td class="grp">' + pct(rr.qualified) + "</td><td>" + pct(rr.pickup) + "</td><td>" + pct(rr.booking) + "</td><td>" + pct(rr.show) + "</td><td>" + pct(rr.close) + "</td>" +
-        '<td><button type="button" class="ghost" data-edit="' + esc(x.date) + '">Edit</button><button type="button" class="ghost danger" data-del="' + esc(x.date) + '">Delete</button></td></tr>';
-    };
-    const foot = "<tfoot><tr><td>Month total</td>" + ["leads", "calls", "pickups", "booked", "shown", "closed"].map((f) => "<td>" + int(t[f]) + "</td>").join("") +
-      "<td>" + money(t.cash) + "</td><td>" + money(t.adspend) + "</td>" +
-      '<td class="grp">' + pct(r.qualified) + "</td><td>" + pct(r.pickup) + "</td><td>" + pct(r.booking) + "</td><td>" + pct(r.show) + "</td><td>" + pct(r.close) + "</td><td></td></tr></tfoot>";
-    log.innerHTML = '<div class="table-wrap"><table>' + head + "<tbody>" + rows.slice().reverse().map(line).join("") + "</tbody>" + foot + "</table></div>";
-    log.querySelectorAll("[data-edit]").forEach((b) => b.addEventListener("click", () => editDay(b.dataset.edit)));
-    log.querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () => confirmDelete(b)));
+  function fmtDay(iso) { return new Date(iso + "T12:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" }); }
+  function scopeRows() {
+    return state.scope === "all"
+      ? Object.values(state.days).filter((x) => x && x.date).sort((a, b) => a.date.localeCompare(b.date))
+      : rowsFor(state.month);
+  }
+  const COUNT_FIELDS = ["leads", "calls", "pickups", "booked", "shown", "closed"];
+  function cells(t, rr) {
+    return COUNT_FIELDS.map((f) => "<td>" + int(num(t[f])) + "</td>").join("") +
+      "<td>" + money(num(t.cash)) + "</td><td>" + money(num(t.adspend)) + "</td>" +
+      '<td class="grp">' + pct(rr.qualified) + "</td><td>" + pct(rr.pickup) + "</td><td>" + pct(rr.booking) + "</td><td>" + pct(rr.show) + "</td><td>" + pct(rr.close) + "</td>";
   }
 
-  function confirmDelete(btn) {
-    if (btn.dataset.armed) {
-      store.deleteDay(btn.dataset.del).catch(showErr("day-status"));
+  function renderLog() {
+    const log = $("log");
+    const rows = scopeRows();
+    const all = state.scope === "all";
+    // Drop selections for days that no longer exist or are out of view.
+    const visible = new Set(rows.map((x) => x.date));
+    state.selected.forEach((d) => { if (!visible.has(d)) state.selected.delete(d); });
+
+    $("scope-month").setAttribute("aria-pressed", String(!all));
+    $("scope-all").setAttribute("aria-pressed", String(all));
+    $("scope-month").textContent = monthName(state.month);
+    const allDates = Object.keys(state.days).sort();
+    $("log-sub").textContent = allDates.length
+      ? int(allDates.length) + " day" + (allDates.length === 1 ? "" : "s") + " saved in total, " + fmtDay(allDates[0]) + " to " + fmtDay(allDates[allDates.length - 1])
+      : "Every day you save is kept here";
+    $("export-csv").hidden = !rows.length || !exporter;
+    $("export-csv").textContent = all ? "Export all days (CSV)" : "Export month (CSV)";
+
+    const n = state.selected.size;
+    $("sel-count").textContent = n ? n + " day" + (n === 1 ? "" : "s") + " selected" : (rows.length ? "Tick days to select several at once" : "");
+    $("delete-selected").hidden = !n;
+    $("delete-selected").textContent = "Delete " + n + " selected";
+    $("clear-selection").hidden = !n;
+    const bulk = Array.isArray(state.pendingDelete) && state.pendingDelete.length > 1;
+    $("bulk-confirm").hidden = !bulk;
+    if (bulk) $("bulk-confirm-text").textContent = "Delete " + state.pendingDelete.length + " days permanently? This can't be undone.";
+
+    if (!rows.length) {
+      const where = all ? "yet" : "for " + monthName(state.month);
+      log.innerHTML = '<div class="empty"><h3>No days logged ' + esc(where) + '</h3>' +
+        "<p>" + (state.ready || store === local ? "Fill in the Daily numbers form above and press Save day. Every day you save is kept here with its own rates, and you can edit or delete any of them." : "Loading saved days…") + "</p>" +
+        (allDates.length === 0 && (state.ready || store === local) ? '<button type="button" id="load-examples">Try it with example data</button>' : "") +
+        (!all && allDates.length ? '<button type="button" id="show-all">Show all days</button>' : "") + "</div>";
+      const b = $("load-examples"); if (b) b.addEventListener("click", loadExamples);
+      const sa = $("show-all"); if (sa) sa.addEventListener("click", () => setScope("all"));
       return;
     }
-    btn.dataset.armed = "1";
-    btn.textContent = "Confirm delete";
-    setTimeout(() => { if (btn.isConnected) { delete btn.dataset.armed; btn.textContent = "Delete"; } }, 4000);
+
+    const allSel = rows.every((x) => state.selected.has(x.date));
+    const head = '<thead><tr><th class="sel"><input type="checkbox" id="sel-all" aria-label="Select all shown days"' + (allSel ? " checked" : "") + "></th>" +
+      "<th>Date</th><th>Leads</th><th>Calls</th><th>Pickups</th><th>Booked</th><th>Shown</th><th>Closed</th><th>Cash</th><th>Ad spend</th>" +
+      '<th class="grp">Qual.</th><th>Pickup</th><th>Booking</th><th>Show</th><th>Close</th><th></th></tr></thead>';
+    const single = Array.isArray(state.pendingDelete) && state.pendingDelete.length === 1 ? state.pendingDelete[0] : null;
+    const line = (x) => {
+      const sel = state.selected.has(x.date), pend = single === x.date;
+      const actions = pend
+        ? '<span class="row-confirm">Delete this day? <button type="button" class="solid-danger" data-yes="' + esc(x.date) + '">Delete</button><button type="button" data-no="1">Cancel</button></span>'
+        : '<button type="button" class="ghost" data-edit="' + esc(x.date) + '">Edit</button><button type="button" class="ghost danger" data-del="' + esc(x.date) + '">Delete</button>';
+      return '<tr class="' + (pend ? "pending" : sel ? "selected" : "") + '"><td class="sel"><input type="checkbox" data-sel="' + esc(x.date) + '" aria-label="Select ' + esc(fmtDay(x.date)) + '"' + (sel ? " checked" : "") + "></td>" +
+        "<td>" + esc(fmtDay(x.date)) + (x.example ? '<span class="tag">example</span>' : "") + "</td>" +
+        cells(x, rates(totals([x]))) + "<td>" + actions + "</td></tr>";
+    };
+
+    let body = "";
+    const desc = rows.slice().reverse();
+    if (all) {
+      const groups = [];
+      desc.forEach((x) => { const k = monthKey(x.date); if (!groups.length || groups[groups.length - 1].key !== k) groups.push({ key: k, rows: [] }); groups[groups.length - 1].rows.push(x); });
+      groups.forEach((g) => {
+        const gt = totals(g.rows);
+        body += '<tr class="month-row"><td></td><td>' + esc(monthName(g.key)) + " · " + g.rows.length + " day" + (g.rows.length === 1 ? "" : "s") + "</td>" + cells(gt, rates(gt)) + "<td></td></tr>";
+        body += g.rows.map(line).join("");
+      });
+    } else {
+      body = desc.map(line).join("");
+    }
+    const t = totals(rows);
+    const foot = "<tfoot><tr><td></td><td>" + (all ? "All-time total" : "Month total") + "</td>" + cells(t, rates(t)) + "<td></td></tr></tfoot>";
+    log.innerHTML = '<div class="table-wrap"><table>' + head + "<tbody>" + body + "</tbody>" + foot + "</table></div>";
   }
+
+  // One delegated listener survives every re-render.
+  $("log").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button");
+    if (!b) return;
+    if (b.dataset.edit) editDay(b.dataset.edit);
+    else if (b.dataset.del) { state.pendingDelete = [b.dataset.del]; render(); }
+    else if (b.dataset.no) { state.pendingDelete = null; render(); }
+    else if (b.dataset.yes) deleteDays([b.dataset.yes]);
+  });
+  $("log").addEventListener("change", (ev) => {
+    const c = ev.target;
+    if (c.id === "sel-all") {
+      scopeRows().forEach((x) => { if (c.checked) state.selected.add(x.date); else state.selected.delete(x.date); });
+    } else if (c.dataset.sel) {
+      if (c.checked) state.selected.add(c.dataset.sel); else state.selected.delete(c.dataset.sel);
+    } else return;
+    state.pendingDelete = null;
+    render();
+  });
+  $("delete-selected").addEventListener("click", () => {
+    const dates = [...state.selected];
+    if (dates.length === 1) { state.pendingDelete = dates; } else { state.pendingDelete = dates; }
+    render();
+    if (dates.length > 1) $("bulk-yes").focus();
+  });
+  $("clear-selection").addEventListener("click", () => { state.selected.clear(); state.pendingDelete = null; render(); });
+  $("bulk-no").addEventListener("click", () => { state.pendingDelete = null; render(); });
+  $("bulk-yes").addEventListener("click", () => deleteDays(state.pendingDelete || []));
+
+  async function deleteDays(dates) {
+    state.pendingDelete = null;
+    let failed = 0;
+    for (const d of dates) {
+      state.selected.delete(d);
+      try { await store.deleteDay(d); } catch (e) { failed++; }
+    }
+    render();
+    const msg = failed ? failed + " of " + dates.length + " days could not be deleted. Reload the page and try again." : "Deleted " + dates.length + " day" + (dates.length === 1 ? "" : "s");
+    const s = $("sel-count"); s.textContent = msg; s.style.color = failed ? "var(--bad)" : "";
+    setTimeout(() => { s.style.color = ""; render(); }, 3000);
+  }
+  function setScope(scope) { state.scope = scope; state.selected.clear(); state.pendingDelete = null; render(); }
+  $("scope-month").addEventListener("click", () => setScope("month"));
+  $("scope-all").addEventListener("click", () => setScope("all"));
 
   // ---------- forms ----------
   let monthFormKey = null, targetsFilled = false;
@@ -618,19 +753,28 @@ tfoot td { font-weight: 600; background: var(--bg); border-bottom: 0; }
     }
   }
   $("clear-examples").addEventListener("click", async () => {
-    for (const r of Object.values(state.days)) { if (r.example) await store.deleteDay(r.date); }
+    const dates = Object.values(state.days).filter((r) => r && r.example).map((r) => r.date);
+    if (!dates.length || state.busy) return;
+    state.busy = true;
+    const btn = $("clear-examples"); btn.disabled = true;
+    $("example-text").textContent = "Removing " + dates.length + " example days…";
+    let failed = 0;
+    for (const d of dates) { state.selected.delete(d); try { await store.deleteDay(d); } catch (e) { failed++; } }
+    state.busy = false; btn.disabled = false;
+    if (failed) $("example-text").textContent = failed + " example days could not be removed. Reload the page and try again.";
+    render();
   });
 
   // ---------- CSV export ----------
   let exporter = null;
   function csv() {
-    const rows = rowsFor(state.month);
+    const rows = scopeRows();
     const head = ["date", ...FIELDS, "qualified_rate", "pickup_rate", "booking_rate", "show_rate", "close_rate"];
     const lines = rows.map((x) => { const rr = rates(totals([x])); return [x.date, ...FIELDS.map((f) => num(x[f])), rr.qualified, rr.pickup, rr.booking, rr.show, rr.close].map((v) => v == null ? "" : typeof v === "number" && v < 1 && v > 0 ? v.toFixed(4) : v).join(","); });
     return head.join(",") + "\n" + lines.join("\n") + "\n";
   }
   $("export-csv").addEventListener("click", () => {
-    if (exporter) exporter(state.month + "-ceo-dashboard.csv", csv()).catch(() => {});
+    if (exporter) exporter((state.scope === "all" ? "all-days" : state.month) + "-ceo-dashboard.csv", csv()).catch(() => {});
   });
 
   // ---------- boot ----------

@@ -30,6 +30,12 @@ A single-page tracker for daily sales and acquisition numbers. Open `index.html`
 | Payback ratio | 30-day gross profit per customer ÷ CAC (≥ 1.0x = CAC recovered within 30 days) |
 | Days to recover CAC | CAC ÷ (30-day gross profit per customer ÷ 30) |
 
+## Day-by-day history
+Every saved day is kept. The history table switches between the selected month and **All days** (grouped by month, with month subtotals and an all-time total). You can:
+- **Edit** any day (loads it into the form; saving the same date replaces it)
+- **Delete** one day (with an inline confirm), or tick several days and **Delete selected**
+- **Export** the month or all days as CSV
+
 Rates show for the month to date and for each day in the log. Each rate is graded against an editable target: green at or above target, amber within 80% of it, red below that.
 
 ## Storage
